@@ -1,0 +1,77 @@
+#include "pic.h"
+
+// declarare prototip funcie 
+unsigned char EPROM_READ(unsigned char address);
+EPROM_WRITE (unsigned char address, unsigned char data);
+
+
+// declarare corp functie 
+EPROM_WRITE (unsigned char address, unsigned char data)
+{
+	// clear EEPGD (bit7) in register EECON1 (control regiter, pag 123)
+	// in order to access the EEPROM memory not the FLASH
+	// This is a mask to clear only bit 7
+	EEADR &= 0x7F;
+	// write the address to EEADR register
+	EEADR = address;
+	// write the data to EEDAT
+	EEDAT = data;
+	// write specific sequence found at page 124 in the datasheet
+	// 1. disable interrupts
+	GIE = 0;
+	// 2.WREN (bit2) in register EECON1 in EECON1 must be set to enable write
+	// This is a mask to set only bit 2
+	EEADR |= 0x4;
+	// 3. write 0x55 to EECON2
+	EECON2 = 0x55;
+	// 4. write 0xAA to EECON2
+	EECON2 = 0xAA;
+	// 5. set bit WR (bit1) in register EECON1 (control regiter, pag 123)
+	// This is a mask to set only bit 1
+	EEADR |= 0x2;
+	// wait until write operation is over
+	while (WR) continue;
+	// enable global interrupts back
+	GIE = 1;
+  // 2.WREN (bit2) in register EECON1 in EECON1 must be clear in software after a write operation
+	WREN = 0;
+
+}
+
+unsigned char EPROM_READ(unsigned char address)
+{
+	unsigned char data;
+	// write the address to EEADR register
+	EEADR = address;
+	// clear EEPGD (bit7) in register EECON1 (control regiter, pag 123)
+	// in order to access the EEPROM memory not the FLASH
+	// This is a mask to clear only bit 7
+	EEADR &= 0x7F;
+	// set RD (bit 0)in register EECON1 in order to start read operation
+	// This is a mask to set only bit 0
+	EEADR |= 0x1;
+	// delay to make sure data is available
+	asm("nop");
+	asm("nop"); 
+	// get the data from the EEPROM into the variable
+	data = EEDAT;
+	//return the variable
+	return data;
+}
+
+void main(main)
+{
+//declarare variabile 
+	unsigned char data_mea;
+	PORTC =0;
+	TRISC =0;
+// scriere la adresa 0x10 din eeprom 
+EPROM_WRITE(0x10,0x04);
+//citire de la adresa 0x10 din eeprom	
+	data_mea = EPROM_READ(0x10);	
+	if (data_mea==0x4)
+		RC0=1;
+			else
+				RC1=1; 
+	while(1)	continue;
+}
